@@ -4,7 +4,7 @@ Aplicação web para acompanhar notas fiscais de serviço por conta, com painel 
 
 ## Funcionalidades
 
-- Contas individuais por e-mail e senha, Google ou Apple (Supabase Auth; provedores sociais dependem de credenciais OAuth configuradas).
+- Contas individuais por e-mail e senha ou Google (Supabase Auth; o login Google depende das credenciais OAuth configuradas).
 - Dados de notas e preferências isolados por usuário via políticas RLS.
 - Dashboard com total emitido, limite anual configurável, saldo e percentual utilizado.
 - Gráfico de barras com valores por mês e alerta configurável.
@@ -29,8 +29,7 @@ O teto padrão de R$ 81.000 é apenas um valor inicial editável, não uma decla
 4. Em **Authentication → URL Configuration**, adicione a URL local `http://localhost:5173` e a URL de produção do GitHub Pages à lista de URLs permitidas. Configure também o Site URL de produção.
 5. Em **Authentication → Providers → Email**, mantenha o provedor por e-mail habilitado. Se a confirmação de e-mail estiver ativa, confirme a conta pelo link enviado antes de entrar.
 6. Para **Google**, configure OAuth Client ID e Client Secret em **Authentication → Sign In / Providers → Google**. No Google Cloud Console, crie um OAuth Client do tipo Web, inclua `https://shockof.github.io` como origem autorizada e o callback exibido pelo Supabase como URI de redirecionamento autorizado (normalmente `https://<project-ref>.supabase.co/auth/v1/callback`). O Google já aparece habilitado neste projeto, mas confirme que Client ID e Secret estão preenchidos e salvos.
-7. Para **Apple**, configure o provedor em **Authentication → Sign In / Providers → Apple**. É necessário criar um Services ID, configurar o domínio de retorno e callback mostrados pelo Supabase no Apple Developer e fornecer Team ID, Key ID e a chave privada Sign in with Apple. A criação dessas credenciais depende de acesso à conta Apple Developer; não use a senha do Apple ID como segredo OAuth.
-8. Os botões Google e Apple retornam ao GitHub Pages após autenticação. Mantenha `https://shockof.github.io/controle-nfse-mei/` na lista de URLs permitidas em **Authentication → URL Configuration**.
+7. O botão Google retorna ao GitHub Pages após autenticação. Mantenha `https://shockof.github.io/controle-nfse-mei/` na lista de URLs permitidas em **Authentication → URL Configuration**.
 
 As policies usam `auth.uid() = user_id` tanto para leitura quanto para inserção/alteração/exclusão. Não desabilite RLS. O navegador recebe apenas a chave pública; o isolamento é aplicado pelo banco.
 
