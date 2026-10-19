@@ -10,6 +10,8 @@ Aplicação web para acompanhar notas fiscais de serviço por conta, com painel 
 - Gráfico de barras com valores por mês e alerta configurável.
 - Cadastro manual, importação XML e leitura best-effort de PDF com tela de revisão antes de gravar.
 - Edição, exclusão e status emitida, cancelada ou substituída; notas canceladas/substituídas não entram no total.
+- Controle de pagamentos de DAS por mês de referência e gastos do MEI por mês do pagamento.
+- Importação de comprovantes bancários em PDF, PNG ou JPG com OCR e revisão dos campos extraídos antes de salvar; também é possível cadastrar pagamentos manualmente.
 - Deduplicação por número da nota + tomador + data + valor; quando não há número, usa tomador + data + valor.
 - Exportação `.xlsx` com aba de resumo e aba de notas contendo nome do tomador, valor, data, descrição, número e status.
 
@@ -24,12 +26,13 @@ O teto padrão de R$ 81.000 é apenas um valor inicial editável, não uma decla
 ## Configurar Supabase
 
 1. No Supabase, crie um projeto e aguarde o provisionamento.
-2. Abra **SQL Editor**, crie uma consulta e execute o conteúdo de [`supabase/schema.sql`](supabase/schema.sql). Isso cria as tabelas `invoices` e `user_settings`, índices, constraints e políticas RLS.
+2. Abra **SQL Editor**, crie uma consulta e execute o conteúdo de [`supabase/schema.sql`](supabase/schema.sql). Isso cria as tabelas `invoices`, `user_settings` e `payment_records`, índices, constraints e políticas RLS.
 3. Em **Project Settings → API**, copie a Project URL e a chave pública `anon` (ou `publishable`). Nunca use `service_role` no navegador.
 4. Em **Authentication → URL Configuration**, adicione a URL local `http://localhost:5173` e a URL de produção do GitHub Pages à lista de URLs permitidas. Configure também o Site URL de produção.
 5. Em **Authentication → Providers → Email**, mantenha o provedor por e-mail habilitado. Se a confirmação de e-mail estiver ativa, confirme a conta pelo link enviado antes de entrar.
 6. Para **Google**, configure OAuth Client ID e Client Secret em **Authentication → Sign In / Providers → Google**. No Google Cloud Console, crie um OAuth Client do tipo Web, inclua `https://shockof.github.io` como origem autorizada e o callback exibido pelo Supabase como URI de redirecionamento autorizado (normalmente `https://<project-ref>.supabase.co/auth/v1/callback`). O Google já aparece habilitado neste projeto, mas confirme que Client ID e Secret estão preenchidos e salvos.
 7. O botão Google retorna ao GitHub Pages após autenticação. Mantenha `https://shockof.github.io/controle-nfse-mei/` na lista de URLs permitidas em **Authentication → URL Configuration**.
+8. No projeto Supabase já existente, execute uma vez [`supabase/migrations/20261019_payment_records.sql`](supabase/migrations/20261019_payment_records.sql) no SQL Editor. Isso cria a tabela de pagamentos com RLS isolada por usuário. A instalação completa do zero também cria essa tabela via `supabase/schema.sql`.
 
 As policies usam `auth.uid() = user_id` tanto para leitura quanto para inserção/alteração/exclusão. Não desabilite RLS. O navegador recebe apenas a chave pública; o isolamento é aplicado pelo banco.
 
@@ -74,6 +77,8 @@ pnpm build
 ```
 
 Há testes básicos para leitura de campos do XML, conversão de valores e criação de fingerprint deduplicável. O parser cobre campos comuns de XML NFS-e, mas há variações municipais; confira sempre os dados antes de salvar. PDFs podem ser digitalizações sem texto ou usar layouts variados: nesses casos, o usuário deve preencher os campos manualmente. Os arquivos importados são processados no navegador e não são enviados nem armazenados; o banco guarda os campos estruturados.
+
+Os comprovantes bancários também são processados localmente. O OCR pode errar nomes, valores ou datas, então sempre revise o formulário. Os modelos de idioma do Tesseract são carregados sob demanda pela internet; o comprovante em si não é enviado a esses serviços nem armazenado. O banco guarda somente os campos estruturados revisados.
 
 ## Observações de privacidade e operação
 
