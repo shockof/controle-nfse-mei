@@ -153,7 +153,7 @@ export default function App() {
           for (let n = 1; n <= Math.min(doc.numPages, 3); n++) {
             const page = await doc.getPage(n)
             const content = await page.getTextContent()
-            const pageText = content.items.map(item => 'str' in item ? item.str : '').join(' ')
+            const pageText = content.items.map(item => 'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '').join('')
             textPages.push(pageText)
             if (pageText.trim().length < 20) {
               const viewport = page.getViewport({ scale: 1.6 })
