@@ -5,3 +5,16 @@
 .oauth-button b{font-family:Arial,sans-serif;font-size:15px}
 .auth-divider{display:flex;align-items:center;gap:10px;color:#99a19a;font-size:10px;margin:1px 0}
 .auth-divider:before,.auth-divider:after{content:'';height:1px;background:#e8ece8;flex:1}
+.payment-summary{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:2px 0 16px;border-bottom:1px solid #eef1ee}
+.payment-summary strong{display:block;font:700 25px Manrope,sans-serif;letter-spacing:-.8px;margin:7px 0 3px}
+.payment-summary small{font-size:10px;color:#929b94}
+.payment-actions{display:flex;gap:8px;flex-wrap:wrap}
+.payment-months{display:grid;gap:17px}
+.payment-month{border:1px solid #eef1ee;border-radius:8px;overflow:hidden}
+.payment-month-heading{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fafbf9}
+.payment-month-heading h2{font:700 12px Manrope,sans-serif;text-transform:capitalize;margin:0}
+.payment-month-heading>b{font-size:12px}
+.payment-month td{padding-block:10px}
+.source-tag{display:inline-block;background:#f1f4f1;padding:4px 7px;border-radius:10px}
+.payment-ledger .filters{margin-top:15px}
+@media(max-width:700px){.payment-summary{align-items:flex-start;flex-direction:column}.payment-actions{width:100%}.payment-actions>*{flex:1;text-align:center}.payment-month-heading{padding:11px}.payment-month table{min-width:650px}}
