@@ -12,6 +12,16 @@ describe('parsePaymentReceipt', () => {
     expect(parsed).toMatchObject({ recipient: 'Loja de Material', amount: 1234.56, payment_date: '2026-03-05', reference_month: '2026-03-01', source: 'imagem' })
   })
 
+  it('lê o formato de comprovante PicPay com recebedor em várias linhas e mês abreviado', () => {
+    const parsed = parsePaymentReceipt('Comprovante de Pix\n05/mai/2026 - 16:30:58\nValor\nR$ 92,41\nPara\nBRISANET SERVICOS DE\nTELECOMUNICACOES S A\n04.601.397/0001-28\nBCO SANTANDER BRASIL S.A.\nDe', 'gasto', 'pdf')
+    expect(parsed).toMatchObject({ recipient: 'BRISANET SERVICOS DE TELECOMUNICACOES S A', amount: 92.41, payment_date: '2026-05-05', reference_month: '2026-05-01' })
+  })
+
+  it('lê o formato Mercado Pago com mês por extenso e centavos em elemento separado', () => {
+    const parsed = parsePaymentReceipt('Comprovante de Pix\n12/julho/2026 às 11:26:43.\nR$ 87 05\nValor original R$ 87 05\nDe\n65.552.211 PESSOA\nCNPJ: 65.552.211/0001-82\nMercado Pago\nPara\nMINISTERIO DA FAZENDA\nCNPJ: 00.394.460/0058-87\nITAÚ UNIBANCO S.A.', 'das', 'pdf')
+    expect(parsed).toMatchObject({ recipient: 'MINISTERIO DA FAZENDA', amount: 87.05, payment_date: '2026-07-12', reference_month: '2026-07-01' })
+  })
+
   it('gera a mesma chave para pagamentos repetidos dos mesmos dados', () => {
     const base = { category: 'gasto' as const, recipient: 'Fornecedor A', amount: 15, payment_date: '2026-03-05', reference_month: '2026-03-01', source: 'manual' as const }
     expect(makePaymentDraft(base).fingerprint).toBe(makePaymentDraft({ ...base, recipient: ' fornecedor a ' }).fingerprint)
