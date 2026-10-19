@@ -20,13 +20,27 @@ function toIsoDate(day: string, month: string, year: string) {
 
 function extractPaymentDate(text: string) {
   const lines = text.split(/\r?\n/)
-  const datePattern = /(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})/
+  const numericDatePattern = /(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})/
   const prioritized = lines.filter(line => /data\s*(?:do\s*)?(?:pagamento|transa[cç][aã]o|opera[cç][aã]o)|pago\s+em/i.test(line))
   for (const line of [...prioritized, ...lines]) {
-    const match = line.match(datePattern)
+    const match = line.match(numericDatePattern)
     if (match) {
       const result = toIsoDate(match[1], match[2], match[3])
       if (result) return result
+    }
+    const namedMatch = line.match(/(\d{1,2})[\/.\-\s]+([a-zçãéó]+)[\/.\-\s]+(\d{4})/i)
+    if (namedMatch) {
+      const months: Record<string, string> = {
+        jan: '01', janeiro: '01', fev: '02', fevereiro: '02', mar: '03', marco: '03',
+        abr: '04', abril: '04', mai: '05', maio: '05', jun: '06', junho: '06',
+        jul: '07', julho: '07', ago: '08', agosto: '08', set: '09', setembro: '09',
+        out: '10', outubro: '10', nov: '11', novembro: '11', dez: '12', dezembro: '12',
+      }
+      const month = months[namedMatch[2].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()]
+      if (month) {
+        const result = toIsoDate(namedMatch[1], month, namedMatch[3])
+        if (result) return result
+      }
     }
   }
   return ''
@@ -39,10 +53,18 @@ function extractDasMonth(text: string, paymentDate: string) {
 }
 
 function extractRecipient(text: string) {
-  const labels = /^(?:(?:nome\s+do\s+)?(?:recebedor|favorecido|benefici[aá]rio|destinat[aá]rio|convenente))\s*[:\-]?\s*(.+)$/i
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.trim().match(labels)
-    const value = match?.[1]?.trim().replace(/\s{2,}.*/, '')
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+  const labels = /^(?:(?:nome\s+do\s+)?(?:para|recebedor|favorecido|benefici[aá]rio|destinat[aá]rio|convenente))\s*[:\-]?\s*(.*)$/i
+  const nextField = /^(?:de|valor(?:\s|:|$)|data(?:\s|:|$)|cnpj\b|cpf\b|bco\.?\s|banco\b|id\s+da\s+transa[cç][aã]o|n\.?[º°]\s*transa[cç][aã]o)/i
+  for (let index = 0; index < lines.length; index++) {
+    const match = lines[index].match(labels)
+    if (!match) continue
+    const parts = match[1] ? [match[1]] : []
+    for (const line of lines.slice(index + 1)) {
+      if (nextField.test(line) || /^\d{2}\.\d{3}\.\d{3}\//.test(line)) break
+      parts.push(line)
+    }
+    const value = parts.join(' ').replace(/\s+/g, ' ').trim()
     if (value && !/\d{8,}/.test(value)) return value.slice(0, 180)
   }
   return ''
@@ -50,12 +72,12 @@ function extractRecipient(text: string) {
 
 function extractAmount(text: string) {
   const candidates = text.split(/\r?\n/).flatMap(line => {
-    const values = Array.from(line.matchAll(/(?:R\$\s*)?((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/g))
+    const values = Array.from(line.matchAll(/(?:R\$\s*)?((?:\d{1,3}(?:\.\d{3})+|\d+))(?:,\s*(\d{2})|\s+(\d{2})(?=\s|$))/g))
     return values.map(match => {
       const label = line.toLowerCase()
       const priority = /valor\s*(?:pago|total|do pagamento|da transa[cç][aã]o|efetivado)|total\s+pago|pagamento\s+efetuado|valor:/i.test(label) ? 5
         : /saldo|juros|desconto|multa|limite|dispon[ií]vel/i.test(label) ? -4 : 0
-      return { amount: amountFrom(match[1]), priority }
+      return { amount: amountFrom(match[1] + ',' + (match[2] ?? match[3])), priority }
     })
   }).filter(item => item.amount > 0)
   candidates.sort((a, b) => b.priority - a.priority || b.amount - a.amount)
