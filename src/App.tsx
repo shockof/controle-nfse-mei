@@ -24,6 +24,7 @@ export default function App() {
   const [editing, setEditing] = useState<Invoice | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [canResendConfirmation, setCanResendConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'painel' | 'notas'>('painel')
   const [query, setQuery] = useState('')
@@ -58,10 +59,21 @@ export default function App() {
 
   async function authSubmit(e: FormEvent) {
     e.preventDefault(); if (!supabase) return
-    setError('')
+    setError(''); setNotice('')
     const result = register ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password })
     if (result.error) setError(result.error.message)
-    else if (register && !result.data.session) setNotice('Conta criada. Confirme seu e-mail pelo link enviado para entrar.')
+    else if (register && !result.data.session) {
+      setCanResendConfirmation(true)
+      setNotice('Solicitação de cadastro aceita. Confirme seu e-mail pelo link enviado para entrar.')
+    }
+  }
+
+  async function resendConfirmation() {
+    if (!supabase || !email.trim()) return
+    setError(''); setNotice('')
+    const { error: resendError } = await supabase.auth.resend({ type: 'signup', email: email.trim() })
+    if (resendError) setError(resendError.message)
+    else setNotice('Solicitação de reenvio enviada. Confira sua caixa de entrada e a pasta de spam.')
   }
 
   async function saveInvoice(e: FormEvent) {
@@ -130,7 +142,7 @@ export default function App() {
 
   if (!configured || !supabase) return <main className="setup"><span className="eyebrow">NOTAS MEI</span><h1>Seu controle começa aqui.</h1><p>Antes de usar, conecte o projeto ao Supabase. As etapas estão no README.</p><div className="setup-card"><b>Configuração necessária</b><ol><li>Crie o projeto Supabase e execute <code>supabase/schema.sql</code>.</li><li>Copie <code>.env.example</code> para <code>.env.local</code> e informe URL e chave pública.</li><li>Reinicie o site com <code>npm run dev</code>.</li></ol></div></main>
 
-  if (!session) return <main className="auth-shell"><section className="auth-art"><span className="eyebrow">NOTAS MEI</span><div><p className="eyebrow">SEU NEGÓCIO, EM FOCO</p><h1>Organize suas notas.<br/>Acompanhe seu ano.</h1><p>Um lugar simples para cuidar do seu faturamento de serviços.</p></div><div className="auth-art-foot">Seu painel financeiro, sempre à mão.</div></section><section className="auth-form-wrap"><form className="auth-form" onSubmit={authSubmit}><span className="eyebrow">BEM-VINDO</span><h2>{register ? 'Crie sua conta' : 'Entre na sua conta'}</h2><p>Suas informações são privadas e protegidas.</p><label>E-mail<input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@exemplo.com" /></label><label>Senha<input required minLength={6} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" /></label><button className="primary full">{register ? 'Criar conta' : 'Entrar'}</button><button type="button" className="text-button" onClick={() => { setRegister(!register); setError('') }}>{register ? 'Já tem conta? Entrar' : 'Ainda não tem conta? Criar conta'}</button>{error && <p className="error">{error}</p>}{notice && <p className="notice">{notice}</p>}</form></section></main>
+  if (!session) return <main className="auth-shell"><section className="auth-art"><span className="eyebrow">NOTAS MEI</span><div><p className="eyebrow">SEU NEGÓCIO, EM FOCO</p><h1>Organize suas notas.<br/>Acompanhe seu ano.</h1><p>Um lugar simples para cuidar do seu faturamento de serviços.</p></div><div className="auth-art-foot">Seu painel financeiro, sempre à mão.</div></section><section className="auth-form-wrap"><form className="auth-form" onSubmit={authSubmit}><span className="eyebrow">BEM-VINDO</span><h2>{register ? 'Crie sua conta' : 'Entre na sua conta'}</h2><p>Suas informações são privadas e protegidas.</p><label>E-mail<input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@exemplo.com" /></label><label>Senha<input required minLength={6} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" /></label><button className="primary full">{register ? 'Criar conta' : 'Entrar'}</button><button type="button" className="text-button" onClick={() => { setRegister(!register); setCanResendConfirmation(false); setError(''); setNotice('') }}>{register ? 'Já tem conta? Entrar' : 'Ainda não tem conta? Criar conta'}</button>{error && <p className="error">{error}</p>}{notice && <p className="notice">{notice}</p>}{canResendConfirmation && register && <button type="button" className="text-button" onClick={() => void resendConfirmation()}>Reenviar e-mail de confirmação</button>}</form></section></main>
 
   return <div className="app-shell"><aside className="sidebar"><a className="brand" href="#"><span className="brand-icon">N</span><span>notas<span className="brand-light">mei</span></span></a><div className="side-label">ESPAÇO DE TRABALHO</div><button className={tab === 'painel' ? 'nav active' : 'nav'} onClick={() => setTab('painel')}><span>▦</span> Visão geral</button><button className={tab === 'notas' ? 'nav active' : 'nav'} onClick={() => setTab('notas')}><span>▤</span> Minhas notas</button><div className="side-user"><div className="avatar">{session.user.email?.[0].toUpperCase()}</div><div className="user-detail"><b>{session.user.email}</b><small>Conta pessoal</small></div><button className="icon-button" title="Sair" onClick={() => void supabase?.auth.signOut()}>↗</button></div></aside>
     <main className="main"><header className="topbar"><div><span className="eyebrow">PAINEL FINANCEIRO</span><div className="breadcrumb">Meu negócio <span>/</span> {tab === 'painel' ? 'Visão geral' : 'Notas fiscais'}</div></div><div className="top-actions"><span className="year-pill">● &nbsp;Exercício {settings.fiscal_year}</span><button className="primary" onClick={() => openEditor()}>＋ Nova nota</button></div></header>
